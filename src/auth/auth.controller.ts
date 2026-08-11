@@ -5,18 +5,16 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-    constructor(  
-        private readonly authService: AuthService,
-    ) {}
+  constructor(private readonly authService: AuthService) {}
 
-    @Post('login')
-    async login(@Body() loginDto: LoginDto) {
-        return this.authService.login(loginDto);
-    }
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
+  }
 
-    @Get('me')
-    @UseGuards(JwtAuthGuard)
-    getMe(@Req() request: any) {
-        return request.user;
-    }
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getMe(@Req() request: any) {
+    return request.user;
+  }
 }

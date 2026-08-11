@@ -8,11 +8,11 @@ import { OrganizationsModule } from './organizations/organizations.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, }),
+    ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     UsersModule,
     OrganizationsModule,
-    AuthModule
+    AuthModule,
   ],
   controllers: [HealthController],
   providers: [],

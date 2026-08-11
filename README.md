@@ -308,3 +308,37 @@ JWT (accessToken)
 Acceso a endpoints protegidos
 ```
 
+---
+
+## Tests
+
+El proyecto usa **Jest** con `ts-jest`. Los tests unitarios están colocados junto al código fuente (`*.spec.ts`) y no dependen de PostgreSQL: todas las dependencias (repositorios, `bcrypt`, `JwtService`, etc.) se mockean.
+
+### Ejecutar tests
+
+```bash
+# En local (si tienes Node instalado)
+npm test              # ejecuta todos los tests unitarios
+npm run test:watch    # modo watch
+npm run test:cov      # con reporte de cobertura (carpeta coverage/)
+
+# Dentro de Docker
+docker compose exec api npm test
+docker compose exec api npm run test:cov
+```
+
+### Cobertura actual
+
+Cobertura del 100% de statements en controllers, services, repositories, DTOs y utilidades de los módulos `auth`, `users`, `organizations`, `common/utils`, `prisma` y `health`. Los archivos `*.module.ts`, `app.module.ts` y `main.ts` (wiring de NestJS) quedan intencionadamente sin tests unitarios.
+
+### Convenciones
+
+- Los tests instancian las clases directamente (`new Service(mockDep)`) con dependencias mockeadas vía `jest.fn()`, en vez de `Test.createTestingModule`.
+- `bcrypt` se mockea con `jest.mock('bcrypt')`.
+- Casos cubiertos: lógica de negocio (login, hash de contraseñas, colisión de slugs `nombre` → `nombre-2` → `nombre-3`, asignación de rol `OWNER`), validación de DTOs (`class-validator`), y manejo de errores (`ConflictException`, `NotFoundException`, `UnauthorizedException`).
+
+### Pendiente
+
+- Tests **e2e** contra una base de datos PostgreSQL real (vía `docker-compose`) — quedan como tarea futura. El archivo `test/app.e2e-spec.ts` actual está desactualizado (prueba una ruta `GET /` que ya no existe).
+
+
