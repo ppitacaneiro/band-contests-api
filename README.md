@@ -1,82 +1,62 @@
+docker compose up -d
 # Band Contests API
 
 API REST para la plataforma SaaS de concursos de bandas musicales.
 
-## 1. Stack tecnológico
+## Resumen
 
-### Backend
+API backend desarrollado con NestJS, TypeScript y Prisma para PostgreSQL. Proporciona autenticación mediante JWT y funcionalidad para gestionar usuarios y organizaciones.
+
+---
+
+## Tecnologías
 
 - **Node.js**
 - **TypeScript**
 - **NestJS**
 - **Prisma ORM**
 - **PostgreSQL**
-- **JWT** para autenticación
-- **Passport / passport-jwt** para protección de endpoints
-- **bcrypt** para hash y validación de contraseñas
-
-### Infraestructura
-
-- **Docker**
-- **Docker Compose**
+- **JWT** (autenticación)
+- **Passport / passport-jwt** (protección de endpoints)
+- **bcrypt** (hash de contraseñas)
+- **Docker & Docker Compose**
 
 ### Herramientas de desarrollo
 
-- npm
-- Prisma CLI
-- Git
+- `npm`
+- `Prisma CLI`
+- `git`
 
 ---
 
-## 2. Arquitectura
+## Arquitectura
 
-Se utiliza una arquitectura modular basada en NestJS y separación de responsabilidades.
+Arquitectura modular con separación en `Controller -> Service -> Repository -> Prisma -> PostgreSQL`.
 
 ```text
 Controller
-    ↓
+  ↓
 Service
-    ↓
+  ↓
 Repository
-    ↓
+  ↓
 Prisma
-    ↓
+  ↓
 PostgreSQL
+```
 
-# Controller
+Responsabilidades principales:
 
-Responsable de:
+- Controller: recibe peticiones HTTP, valida DTOs y devuelve respuestas.
+- Service: contiene la lógica de negocio.
+- Repository: abstrae el acceso a datos (usa `PrismaService`).
+- Prisma: modelos, migraciones y Prisma Client.
 
-- Recibir las peticiones HTTP.
-- Validar DTOs.
-- Obtener el usuario autenticado.
-- Devolver las respuestas.
+---
 
-Service
+## Estructura del proyecto (resumen)
 
-Contiene la lógica de negocio.
-
-Ejemplos:
-
-Autenticación.
-Generación de slugs.
-Creación de organizaciones.
-Comprobación de reglas de negocio.
-Repository
-
-Abstrae el acceso a datos.
-
-Los repositories utilizan PrismaService para comunicarse con PostgreSQL.
-
-Prisma
-
-Gestiona:
-
-Modelos de datos.
-Migraciones.
-Consultas a PostgreSQL.
-Prisma Client.
-3. Estructura del proyecto
+```
 src/
 ├── auth/
 │   ├── dto/
@@ -89,13 +69,11 @@ src/
 │   ├── current-user.decorator.ts
 │   ├── jwt-auth.guard.ts
 │   └── jwt.strategy.ts
-│
 ├── users/
 │   ├── users.controller.ts
 │   ├── users.module.ts
 │   ├── users.repository.ts
 │   └── users.service.ts
-│
 ├── organizations/
 │   ├── dto/
 │   │   └── create-organization.dto.ts
@@ -103,15 +81,12 @@ src/
 │   ├── organizations.module.ts
 │   ├── organizations.repository.ts
 │   └── organizations.service.ts
-│
 ├── prisma/
 │   ├── prisma.module.ts
 │   └── prisma.service.ts
-│
 ├── common/
 │   └── utils/
 │       └── slug.util.ts
-│
 ├── app.module.ts
 └── main.ts
 
@@ -124,280 +99,223 @@ docker-compose.yml
 Dockerfile
 package.json
 tsconfig.json
-4. Entorno de desarrollo
-Requisitos
-Docker
-Docker Compose
-Git
+```
 
-No es necesario instalar PostgreSQL ni Node.js directamente en el sistema si se utiliza el entorno Docker configurado para el proyecto.
+---
 
-Arrancar el proyecto
+## Entorno de desarrollo
+
+### Requisitos
+
+- `Docker`
+- `Docker Compose`
+- `git`
+
+No es necesario instalar PostgreSQL ni Node.js localmente si se usa Docker.
+
+### Levantar el entorno
+
+```bash
 docker compose up -d
+```
 
 Ver logs de la API:
 
+```bash
 docker compose logs -f api
+```
 
-La API está disponible en:
+La API estará disponible en: `http://localhost:3001`
 
-http://localhost:3001
-5. Servicios Docker
-API
-api:
-  ports:
-    - "3001:3001"
-PostgreSQL
-postgres:
-  image: postgres:17-alpine
-  ports:
-    - "5432:5432"
+---
 
-Datos de desarrollo:
+## Servicios Docker (resumen)
 
-Database: band_contests
-User: band_contests
-Password: band_contests_dev
-Host: postgres
-Port: 5432
+Ejemplo de servicios relevantes en `docker-compose.yml`:
 
-La API utiliza:
+- API (`api`): `3001:3001`
+- PostgreSQL (`postgres`): `postgres:17-alpine`, `5432:5432`
 
+Credenciales de desarrollo (ejemplo):
+
+- Database: `band_contests`
+- User: `band_contests`
+- Password: `band_contests_dev`
+- Host: `postgres`
+- Port: `5432`
+
+Cadena de conexión de ejemplo:
+
+```
 DATABASE_URL=postgresql://band_contests:band_contests_dev@postgres:5432/band_contests?schema=public
-6. Prisma
+```
 
-Generar Prisma Client:
+---
 
+## Prisma
+
+Comandos útiles (ejecutar dentro del contenedor `api`):
+
+```bash
 docker compose exec api npx prisma generate
-
-Comprobar estado de las migraciones:
-
 docker compose exec api npx prisma migrate status
-
-Crear una migración:
-
-docker compose exec api npx prisma migrate dev --name nombre_migracion
-
-Aplicar migraciones:
-
+docker compose exec api npx prisma migrate dev --name <nombre_migracion>
 docker compose exec api npx prisma migrate deploy
-
-Reiniciar completamente la base de datos durante desarrollo:
-
 docker compose exec api npx prisma migrate reset
+```
 
-migrate reset elimina todos los datos de la base de datos. No utilizar en producción.
+`migrate reset` elimina todos los datos: no usar en producción.
 
-7. Modelo de datos actual
-User
-User
-├── id
-├── name
-├── email
-├── password
-├── role
-├── emailVerifiedAt
-├── createdAt
-└── updatedAt
+---
 
-Roles globales:
+## Modelo de datos (resumen)
 
-ADMIN
-ORGANIZER
-JURY
-BAND
-Organization
-Organization
-├── id
-├── name
-├── slug
-├── createdAt
-└── updatedAt
+### User
 
-El slug es único.
+- `id`
+- `name`
+- `email`
+- `password`
+- `role` (ADMIN, ORGANIZER, JURY, BAND)
+- `emailVerifiedAt`
+- `createdAt`
+- `updatedAt`
 
-Ejemplo:
+### Organization
 
-name: "Festival de Música de Coruña"
-slug: "festival-de-musica-de-coruna"
+- `id`
+- `name`
+- `slug` (único)
+- `createdAt`
+- `updatedAt`
 
-Si el slug ya existe:
+Ejemplo de slug generado: `festival-de-musica-de-coruna` (si existe, se añade sufijo `-2`, `-3`, ...)
 
-festival-de-musica-de-coruna
-festival-de-musica-de-coruna-2
-festival-de-musica-de-coruna-3
+### OrganizationUser (relación)
 
-El slug se genera en el backend.
+- `id`
+- `userId`
+- `organizationId`
+- `role` (OWNER, ADMIN, MEMBER)
+- `createdAt`
+- `updatedAt`
 
-OrganizationUser
+Restricción: `(userId, organizationId)` es única.
 
-Tabla intermedia entre usuarios y organizaciones.
+---
 
-OrganizationUser
-├── id
-├── userId
-├── organizationId
-├── role
-├── createdAt
-└── updatedAt
+## Autenticación
 
-Roles dentro de una organización:
+Autenticación basada en `JWT` usando `Passport` y `bcrypt` para las contraseñas.
 
-OWNER
-ADMIN
-MEMBER
+Flujo:
 
-Un usuario puede pertenecer a varias organizaciones.
+1. El usuario envía `email` y `password` a `POST /api/auth/login`.
+2. Backend valida credenciales (bcrypt) y genera un JWT.
+3. Devuelve un `accessToken` al cliente.
 
-Una organización puede tener varios usuarios.
+Ejemplo de petición:
 
-Existe una restricción única:
-
-(userId, organizationId)
-
-Por tanto, un usuario no puede pertenecer dos veces a la misma organización.
-
-8. Autenticación
-
-La autenticación utiliza:
-
-JWT + Passport + bcrypt
-
-El usuario realiza login con email y contraseña.
-
-El backend:
-
-Busca el usuario.
-Comprueba la contraseña mediante bcrypt.
-Genera un JWT.
-Devuelve el token.
-
-Ejemplo de respuesta:
-
-{
-  "accessToken": "eyJ...",
-  "tokenType": "Bearer",
-  "expiresIn": "7d"
-}
-
-Las rutas protegidas utilizan:
-
-@UseGuards(JwtAuthGuard)
-9. Usuario autenticado
-
-El usuario autenticado está disponible mediante:
-
-@CurrentUser()
-
-Ejemplo:
-
-@Get()
-async findMine(
-  @CurrentUser() user: AuthenticatedUser,
-) {
-  return this.organizationsService.findByUserId(user.id);
-}
-
-La interfaz utilizada es:
-
-AuthenticatedUser
-
-Actualmente contiene la información necesaria procedente del JWT, incluyendo:
-
-id
-email
-10. Endpoints
-
-Base URL:
-
-/api
-Auth
-POST /api/auth/login
-
-Inicia sesión.
-
-Request:
-
+```json
 {
   "email": "carlos@example.com",
   "password": "password"
 }
+```
 
-Response:
+Ejemplo de respuesta:
 
+```json
 {
   "accessToken": "eyJ...",
   "tokenType": "Bearer",
   "expiresIn": "7d"
 }
-Organizations
+```
 
-Todos los endpoints de organizaciones están actualmente protegidos mediante JWT.
+Rutas protegidas: usar `@UseGuards(JwtAuthGuard)` y enviar header `Authorization: Bearer <token>`.
 
-Header:
+---
 
-Authorization: Bearer <accessToken>
-POST /api/organizations
+## Usuario autenticado
 
-Crea una organización para el usuario autenticado.
+El usuario autenticado se obtiene mediante el decorador `@CurrentUser()`.
+
+Ejemplo:
+
+```ts
+@Get()
+async findMine(@CurrentUser() user: AuthenticatedUser) {
+  return this.organizationsService.findByUserId(user.id);
+}
+```
+
+La interfaz `AuthenticatedUser` contiene al menos `id` y `email` procedentes del JWT.
+
+---
+
+## Endpoints principales
+
+Base URL: `/api`
+
+### Auth
+
+- `POST /api/auth/login` — Inicia sesión.
 
 Request:
 
+```json
+{
+  "email": "carlos@example.com",
+  "password": "password"
+}
+```
+
+Response: token JWT (ver arriba).
+
+### Organizations
+
+Todos los endpoints de organizaciones requieren JWT.
+
+- Header: `Authorization: Bearer <accessToken>`
+- `POST /api/organizations` — Crear organización (el usuario autenticado se asigna como `OWNER`).
+
+Request:
+
+```json
 {
   "name": "Festival de Música de Coruña"
 }
+```
 
-El backend genera automáticamente el slug:
+- `GET /api/organizations` — Obtener organizaciones del usuario autenticado.
+- `GET /api/organizations/:id` — Obtener organización por ID (la autorización por pertenencia necesita refuerzo).
 
-festival-de-musica-de-coruna
+---
 
-El usuario autenticado se añade automáticamente como:
+## Flujo actual (resumen)
 
-OWNER
-
-La creación se realiza mediante una única operación de Prisma que crea:
-
-Organization
-└── OrganizationUser
-    ├── userId
-    └── role = OWNER
-GET /api/organizations
-
-Obtiene las organizaciones a las que pertenece el usuario autenticado.
-
-Ejemplo:
-
-GET /api/organizations
-Authorization: Bearer <accessToken>
-
-La consulta se realiza utilizando el userId obtenido del JWT.
-
-No se recibe el userId desde el frontend.
-
-GET /api/organizations/:id
-
-Obtiene una organización por su ID.
-
-Ejemplo:
-
-GET /api/organizations/01063a09-e9b1-43c8-8aca-fee2e4e98b5c
-Authorization: Bearer <accessToken>
-
-Actualmente este endpoint comprueba el ID de la organización, pero la autorización por pertenencia a la organización debe reforzarse antes de considerarlo terminado.
-
-11. Flujo actual
-
-El flujo implementado hasta ahora es:
-
+```text
 Usuario
-   │
-   ▼
-POST /auth/login
-   │
-   ▼
-JWT
-   │
-   ▼
+  │
+  ▼
+POST /api/auth/login
+  │
+  ▼
+JWT (accessToken)
+  │
+  ▼
+Acceso a endpoints protegidos
+```
+
+---
+
+Si quieres, puedo:
+
+- Añadir ejemplos de curl para endpoints.
+- Incluir un diagrama mermaid del flujo de autenticación.
+- Añadir sección de pruebas e2e existentes (`test/`).
+
 Authorization: Bearer JWT
    │
    ▼
