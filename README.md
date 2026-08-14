@@ -312,7 +312,10 @@ Acceso a endpoints protegidos
 
 ## Tests
 
-El proyecto usa **Jest** con `ts-jest`. Los tests unitarios están colocados junto al código fuente (`*.spec.ts`) y no dependen de PostgreSQL: todas las dependencias (repositorios, `bcrypt`, `JwtService`, etc.) se mockean.
+El proyecto usa **Jest** con `ts-jest`. Existen dos suites de tests:
+
+- **Unitarios** (`*.spec.ts`): colocados junto al código fuente. No dependen de PostgreSQL: todas las dependencias (repositorios, `bcrypt`, `JwtService`, etc.) se mockean.
+- **End-to-end** (`test/*.e2e-spec.ts`): ejercitan la API completa contra una PostgreSQL real en Docker (ver abajo).
 
 ### Ejecutar tests
 
@@ -337,8 +340,38 @@ Cobertura del 100% de statements en controllers, services, repositories, DTOs y 
 - `bcrypt` se mockea con `jest.mock('bcrypt')`.
 - Casos cubiertos: lógica de negocio (login, hash de contraseñas, colisión de slugs `nombre` → `nombre-2` → `nombre-3`, asignación de rol `OWNER`), validación de DTOs (`class-validator`), y manejo de errores (`ConflictException`, `NotFoundException`, `UnauthorizedException`).
 
-### Pendiente
+### Tests end-to-end (e2e)
 
-- Tests **e2e** contra una base de datos PostgreSQL real (vía `docker-compose`) — quedan como tarea futura. El archivo `test/app.e2e-spec.ts` actual está desactualizado (prueba una ruta `GET /` que ya no existe).
+Los tests e2e ejercitan la API real (Nest app completa) contra una base de datos PostgreSQL en Docker, con `supertest` sobre el servidor HTTP.
+
+#### Requisitos
+
+- Entorno levantado (`docker compose up -d`), incluyendo PostgreSQL.
+- Prisma Client generado (`docker compose exec api npx prisma generate`).
+
+#### Ejecutar
+
+```bash
+docker compose exec api npm run test:e2e
+```
+
+> **Importante**: deben ejecutarse **dentro del contenedor `api`**. Los archivos `test/setup-e2e.ts` y `test/global-setup.ts` hardcodean el host `postgres`, que solo resuelve dentro de la red de Docker (no hay mapeo al host).
+
+#### Qué hacen el setup y el cleanup
+
+- `test/global-setup.ts`: crea el schema `test_e2e` en PostgreSQL y aplica las migraciones con `prisma migrate deploy`.
+- `test/setup-e2e.ts`: fija las variables de entorno (`DATABASE_URL`, `PRISMA_SCHEMA=test_e2e`, `JWT_SECRET`, `JWT_EXPIRES_IN`).
+- `test/utils/db-cleanup.ts`: trunca las tablas de `test_e2e` antes de cada test.
+
+#### Configuración
+
+- `test/jest-e2e.json`: `maxWorkers: 1`, timeout de 30s, patrón `*.e2e-spec.ts`.
+- La configuración de la app en los e2e replica `main.ts`: prefijo global `api` + `ValidationPipe` con `whitelist`, `forbidNonWhitelisted` y `transform`.
+
+#### Cobertura actual
+
+- `test/app.e2e-spec.ts` — health: `GET /api/health`.
+- `test/users.e2e-spec.ts` — usuarios: `POST /api/users` y `GET /api/users/:id`.
+- `test/auth.e2e-spec.ts` — autenticación: `POST /api/auth/login` y `GET /api/auth/me`.
 
 
