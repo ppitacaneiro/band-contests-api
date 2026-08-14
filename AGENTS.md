@@ -1,51 +1,99 @@
-# AGENTS.md
+# Band Contests API
 
-API REST (NestJS + TypeScript + Prisma + PostgreSQL) para concursos de bandas. Arquitectura modular `Controller -> Service -> Repository -> Prisma`.
+## Proyecto
 
-## Comandos
+API backend para una plataforma SaaS de concursos musicales.
 
-```bash
-# Desarrollo (recomendado): la app corre dentro de Docker con hot-reload
-docker compose up -d                 # levanta api (3001) + postgres (5432)
-docker compose logs -f api
+## Stack
 
-# Prisma: ejecutar SIEMPRE dentro del contenedor api
-docker compose exec api npx prisma generate   # NO hay postinstall: obligatorio tras npm ci
-docker compose exec api npx prisma migrate deploy
-docker compose exec api npx prisma migrate dev --name <nombre>
-
-# Tests
-npm test                  # unitarios (no requieren DB; rootDir=src, *.spec.ts)
-docker compose exec api npm run test:e2e   # OJO: debe correr DENTRO del contenedor (ver convenciones)
-npm run lint              # OJO: incluye --fix, modifica archivos
-```
-
-## Gotchas de Prisma v7 (no obvios)
-
-- `prisma/schema.prisma`: el datasource **no tiene `url`**. El CLI lo lee de `prisma.config.ts` (`DATABASE_URL`); en runtime se usa driver adapter `@prisma/adapter-pg` (ver `src/prisma/prisma.service.ts`).
-- El cliente generado sale a `generated/prisma/` (gitignored, no se versiona) y se importa como `../../generated/prisma/client`. **Si no existe, ni la app ni los tests compilan** (los `*.spec.ts` importan `prisma.service`, que lo usa): hay que ejecutar `prisma generate` después de cada `npm ci` y antes de `npm test`.
-- `PRISMA_SCHEMA` (env) selecciona el schema PostgreSQL; los tests e2e lo usan para aislar `test_e2e`.
-- Las migraciones se aplican a un schema determinado según la `DATABASE_URL`/`PRISMA_SCHEMA` activa.
-
-## Entorno
-
-- `.env` no está versionado y es **obligatorio** (`JWT_SECRET` se lee con `getOrThrow` en `src/auth/auth.module.ts`). Copiar `.env.example` y rellenar `DATABASE_URL` y `JWT_SECRET`.
-- `docker-compose.yml` fija `DATABASE_URL` y `PORT` del contenedor, pero **no** `JWT_SECRET`; el `.env` del host se monta vía bind mount (`.:/app`).
-
-## Tests (convenciones)
-
-- **Unitarios**: instancian clases directamente (`new Service({ findByEmail: jest.fn() })`), **no** usan `Test.createTestingModule`. `bcrypt` se mockea con `jest.mock('bcrypt')`. Se espera cobertura del 100% en controllers/services/repos/DTOs/utilidades (los `*.module.ts`, `app.module.ts` y `main.ts` quedan sin testear a propósito).
-- **E2E**: requieren postgres en Docker y **deben ejecutarse dentro del contenedor api** (`docker compose exec api npm run test:e2e`), porque `test/setup-e2e.ts` hardcodea el host `postgres`, que solo resuelve dentro de la red Docker (sin mapeo en el host). `test/global-setup.ts` crea el schema `test_e2e` y aplica migraciones; `test/setup-e2e.ts` fija env; `test/utils/db-cleanup.ts` trunca tablas antes de cada test. `maxWorkers: 1`, timeout 30s. La config de la app en los e2e debe replicar `main.ts` (prefijo `api` + `ValidationPipe`).
+- Node.js
+- TypeScript
+- NestJS
+- Prisma
+- PostgreSQL
+- Docker / Docker Compose
+- JWT
+- bcrypt
+- Jest
+- Supertest
 
 ## Arquitectura
 
-- `src/users` exporta `UsersService` y `UsersRepository` (AuthModule los importa).
-- Repositorios abstraten `PrismaService`; los services no tocan Prisma directamente.
-- `AuthModule` usa `PassportModule` + `JwtModule.registerAsync` con `JWT_SECRET`.
-- Rutas de organizations usan `@UseGuards(JwtAuthGuard)` a nivel de controller y `@CurrentUser()` para el usuario autenticado.
-- DTOs validados por el `ValidationPipe` global (`whitelist` + `forbidNonWhitelisted`: campos extra en el body -> 400).
+Aplicación NestJS modular.
 
-## Otras notas
+Cada módulo debe separar:
 
-- Imports mezclan rutas relativas (`../users/...`) y absolutas (`src/users/...`); tsconfig tiene `baseUrl: "./"`, y jest mapea `*.js -> *` (módulos `nodenext`).
-- `GET /api/organizations/:id` aún no verifica pertenencia del usuario a la organización (autorización por reforzar).
+- Controller
+- Service
+- Repository
+- DTO
+- Tests
+
+Los controllers no deben contener lógica de negocio.
+
+Los services contienen la lógica de negocio.
+
+Los repositories son responsables del acceso a Prisma.
+
+## Autenticación
+
+La autenticación utiliza JWT.
+
+Los endpoints protegidos utilizan JwtAuthGuard.
+
+El usuario autenticado se obtiene mediante CurrentUser decorator.
+
+## Organizaciones
+
+Un usuario puede pertenecer a múltiples organizaciones.
+
+OrganizationUser representa la relación entre User y Organization.
+
+OrganizationUser tiene un role.
+
+La creación de una organización crea automáticamente una relación
+OrganizationUser con role OWNER.
+
+## Slugs
+
+Los slugs se generan en backend.
+
+Nunca deben ser generados por el frontend.
+
+Ejemplo:
+
+Band Galicia
+→ band-galicia
+
+Si existe:
+
+Band Galicia
+→ band-galicia-2
+
+## Tests
+
+Los unit tests utilizan mocks.
+
+Los E2E utilizan PostgreSQL real.
+
+Los E2E utilizan el schema:
+
+test_e2e
+
+Nunca modificar ni truncar el schema public durante los tests E2E.
+
+El comando oficial para ejecutar E2E es:
+
+docker compose exec api npm run test:e2e
+
+## Reglas importantes
+
+- No modificar código sin entender primero la arquitectura existente.
+- No introducir dependencias innecesarias.
+- No duplicar lógica.
+- Mantener TypeScript estrictamente tipado.
+- Crear tests para nueva lógica de negocio.
+- Crear o actualizar tests E2E para nuevos endpoints importantes.
+- No modificar public durante los tests E2E.
+- Antes de cambiar arquitectura, explicar primero la propuesta.
+- Mantener los controllers delgados.
