@@ -97,3 +97,4 @@ docker compose exec api npm run test:e2e
 - No modificar public durante los tests E2E.
 - Antes de cambiar arquitectura, explicar primero la propuesta.
 - Mantener los controllers delgados.
+- Actualizar documentación de API con Swagger
