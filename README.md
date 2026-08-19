@@ -5,7 +5,7 @@ API REST para la plataforma SaaS de concursos de bandas musicales.
 
 ## Resumen
 
-API backend desarrollado con NestJS, TypeScript y Prisma para PostgreSQL. Proporciona autenticación mediante JWT y funcionalidad para gestionar usuarios, organizaciones y concursos.
+API backend desarrollado con NestJS, TypeScript y Prisma para PostgreSQL. Proporciona autenticación mediante JWT y funcionalidad para gestionar usuarios, organizaciones, concursos y bandas.
 
 ---
 
@@ -89,6 +89,17 @@ src/
 │   ├── contests.repository.ts
 │   ├── contests.service.ts
 │   └── organizations-contests.controller.ts
+├── bands/
+│   ├── dto/
+│   │   ├── add-band-member.dto.ts
+│   │   ├── create-band.dto.ts
+│   │   └── update-band.dto.ts
+│   ├── band-members.controller.ts
+│   ├── band-members.service.ts
+│   ├── bands.controller.ts
+│   ├── bands.module.ts
+│   ├── bands.repository.ts
+│   └── bands.service.ts
 ├── prisma/
 │   ├── prisma.module.ts
 │   └── prisma.service.ts
@@ -235,6 +246,33 @@ Enums:
 
 `Organization` tiene relación `contests` (uno a muchos).
 
+### Band
+
+- `id`
+- `name`
+- `description`
+- `genre`
+- `city`
+- `createdAt`
+- `updatedAt`
+
+### BandMember (relación)
+
+- `id`
+- `bandId`
+- `userId`
+- `role` (OWNER, MANAGER)
+- `createdAt`
+- `updatedAt`
+
+Restricción: `(bandId, userId)` es única.
+
+El usuario que crea una banda se asigna automáticamente como `OWNER`.
+
+Enums:
+
+- `BandRole`: `OWNER`, `MANAGER`.
+
 ---
 
 ## Autenticación
@@ -346,6 +384,43 @@ Request:
 - `GET /api/organizations/:organizationId/contests` — Obtener los concursos de una organización.
 - `GET /api/contests/:id` — Obtener concurso por ID.
 
+### Bands
+
+Todos los endpoints de bandas requieren JWT.
+
+- Header: `Authorization: Bearer <accessToken>`
+- `POST /api/bands` — Crear banda (el usuario autenticado se asigna como `OWNER`).
+
+Request:
+
+```json
+{
+  "name": "Los Deltonos",
+  "genre": "Rock",
+  "city": "Santander"
+}
+```
+
+- `GET /api/bands` — Obtener las bandas del usuario autenticado.
+- `GET /api/bands/:id` — Obtener banda por ID (requiere ser miembro de la banda).
+- `PATCH /api/bands/:id` — Actualizar banda (solo rol `OWNER`).
+
+Miembros de la banda:
+
+- `GET /api/bands/:bandId/members` — Listar miembros (requiere ser miembro).
+- `POST /api/bands/:bandId/members` — Añadir miembro (solo `OWNER` o `MANAGER`). Rol por defecto `MANAGER`.
+
+Request:
+
+```json
+{
+  "userId": "uuid-del-usuario",
+  "role": "MANAGER"
+}
+```
+
+- `DELETE /api/bands/:bandId/members/:userId` — Eliminar miembro (solo `OWNER` o `MANAGER`). No permite eliminar el último `OWNER`.
+
 ---
 
 ## Flujo actual (resumen)
@@ -387,7 +462,7 @@ docker compose exec api npm run test:cov
 
 ### Cobertura actual
 
-Cobertura del 100% de statements en controllers, services, repositories, DTOs y utilidades de los módulos `auth`, `users`, `organizations`, `contests`, `common/utils`, `prisma` y `health`. Los archivos `*.module.ts`, `app.module.ts` y `main.ts` (wiring de NestJS) quedan intencionadamente sin tests unitarios.
+Cobertura del 100% de statements en controllers, services, repositories, DTOs y utilidades de los módulos `auth`, `users`, `organizations`, `contests`, `bands`, `common/utils`, `prisma` y `health`. Los archivos `*.module.ts`, `app.module.ts` y `main.ts` (wiring de NestJS) quedan intencionadamente sin tests unitarios.
 
 ### Convenciones
 
@@ -429,5 +504,6 @@ docker compose exec api npm run test:e2e
 - `test/users.e2e-spec.ts` — usuarios: `POST /api/users` y `GET /api/users/:id`.
 - `test/auth.e2e-spec.ts` — autenticación: `POST /api/auth/login` y `GET /api/auth/me`.
 - `test/contests.e2e-spec.ts` — concursos: CRUD de concursos por organización y permisos por rol.
+- `test/bands.e2e-spec.ts` — bandas: CRUD de bandas, gestión de miembros y permisos por rol.
 
 

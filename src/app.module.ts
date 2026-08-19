@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ContestsModule } from './contests/contests.module';
+import { BandsModule } from './bands/bands.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ContestsModule } from './contests/contests.module';
     UsersModule,
     OrganizationsModule,
     ContestsModule,
+    BandsModule,
     AuthModule,
   ],
   controllers: [HealthController],
