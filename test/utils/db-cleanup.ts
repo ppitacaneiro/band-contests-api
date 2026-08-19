@@ -10,6 +10,7 @@ export async function cleanDatabase() {
 
     await client.query(`
         TRUNCATE TABLE
+        "test_e2e"."Contest",
         "test_e2e"."OrganizationUser",
         "test_e2e"."Organization",
         "test_e2e"."User"

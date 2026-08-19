@@ -26,6 +26,21 @@ enum OrganizationRole {
   MEMBER
 }
 
+enum ContestStatus {
+  DRAFT
+  PUBLISHED
+  OPEN
+  VOTING
+  CLOSED
+  FINISHED
+}
+
+enum ContestVotingMode {
+  JURY
+  PUBLIC
+  MIXED
+}
+
 model User {
   id              String   @id @default(uuid())
   name            String
@@ -44,7 +59,29 @@ model Organization {
   slug      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users OrganizationUser[]
+  users     OrganizationUser[]
+  contests  Contest[]
+}
+
+model Contest {
+  id                  String            @id @default(uuid())
+  name                String
+  description         String?
+  posterUrl           String?
+  latitude            Float?
+  longitude           Float?
+  startsAt            DateTime?
+  endsAt              DateTime?
+  registrationDeadline DateTime?
+  rules               String?
+  status              ContestStatus     @default(DRAFT)
+  votingMode          ContestVotingMode @default(JURY)
+  organizationId      String
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([organizationId])
 }
 
 model OrganizationUser {

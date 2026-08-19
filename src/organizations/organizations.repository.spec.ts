@@ -9,6 +9,9 @@ describe('OrganizationsRepository', () => {
       findMany: jest.Mock;
       create: jest.Mock;
     };
+    organizationUser: {
+      findFirst: jest.Mock;
+    };
   };
 
   beforeEach(() => {
@@ -17,6 +20,9 @@ describe('OrganizationsRepository', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         create: jest.fn(),
+      },
+      organizationUser: {
+        findFirst: jest.fn(),
       },
     };
     repository = new OrganizationsRepository(
@@ -58,6 +64,25 @@ describe('OrganizationsRepository', () => {
       where: { users: { some: { userId: 'user-1' } } },
     });
     expect(result).toBe(orgs);
+  });
+
+  it('findMembership queries the OrganizationUser relation', async () => {
+    const membership = {
+      id: 'ou-1',
+      userId: 'user-1',
+      organizationId: 'org-1',
+      role: 'OWNER',
+    };
+    prisma.organizationUser = {
+      findFirst: jest.fn().mockResolvedValue(membership),
+    };
+
+    const result = await repository.findMembership('user-1', 'org-1');
+
+    expect(prisma.organizationUser.findFirst).toHaveBeenCalledWith({
+      where: { userId: 'user-1', organizationId: 'org-1' },
+    });
+    expect(result).toBe(membership);
   });
 
   it('create builds a nested OrganizationUser with the OWNER role', async () => {

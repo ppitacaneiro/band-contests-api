@@ -5,6 +5,7 @@ import { HealthController } from './health.controller';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { ContestsModule } from './contests/contests.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
     PrismaModule,
     UsersModule,
     OrganizationsModule,
+    ContestsModule,
     AuthModule,
   ],
   controllers: [HealthController],

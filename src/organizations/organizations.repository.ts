@@ -33,6 +33,15 @@ export class OrganizationsRepository {
     });
   }
 
+  async findMembership(userId: string, organizationId: string) {
+    return this.prisma.organizationUser.findFirst({
+      where: {
+        userId,
+        organizationId,
+      },
+    });
+  }
+
   async create(data: { name: string; slug: string; userId: string }) {
     return this.prisma.organization.create({
       data: {
