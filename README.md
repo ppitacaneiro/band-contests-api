@@ -5,7 +5,7 @@ API REST para la plataforma SaaS de concursos de bandas musicales.
 
 ## Resumen
 
-API backend desarrollado con NestJS, TypeScript y Prisma para PostgreSQL. Proporciona autenticación mediante JWT y funcionalidad para gestionar usuarios y organizaciones.
+API backend desarrollado con NestJS, TypeScript y Prisma para PostgreSQL. Proporciona autenticación mediante JWT y funcionalidad para gestionar usuarios, organizaciones y concursos.
 
 ---
 
@@ -81,6 +81,14 @@ src/
 │   ├── organizations.module.ts
 │   ├── organizations.repository.ts
 │   └── organizations.service.ts
+├── contests/
+│   ├── dto/
+│   │   └── create-contest.dto.ts
+│   ├── contests.controller.ts
+│   ├── contests.module.ts
+│   ├── contests.repository.ts
+│   ├── contests.service.ts
+│   └── organizations-contests.controller.ts
 ├── prisma/
 │   ├── prisma.module.ts
 │   └── prisma.service.ts
@@ -202,6 +210,31 @@ Ejemplo de slug generado: `festival-de-musica-de-coruna` (si existe, se añade s
 
 Restricción: `(userId, organizationId)` es única.
 
+### Contest
+
+- `id`
+- `name`
+- `description`
+- `posterUrl`
+- `latitude`
+- `longitude`
+- `startsAt`
+- `endsAt`
+- `registrationDeadline`
+- `rules`
+- `status` (ver enum `ContestStatus`)
+- `votingMode` (ver enum `ContestVotingMode`)
+- `organizationId` (relación `Organization` con borrado en cascada)
+- `createdAt`
+- `updatedAt`
+
+Enums:
+
+- `ContestStatus`: `DRAFT`, `PUBLISHED`, `OPEN`, `VOTING`, `CLOSED`, `FINISHED`.
+- `ContestVotingMode`: `JURY`, `PUBLIC`, `MIXED`.
+
+`Organization` tiene relación `contests` (uno a muchos).
+
 ---
 
 ## Autenticación
@@ -291,6 +324,28 @@ Request:
 - `GET /api/organizations` — Obtener organizaciones del usuario autenticado.
 - `GET /api/organizations/:id` — Obtener organización por ID (la autorización por pertenencia necesita refuerzo).
 
+### Contests
+
+Todos los endpoints de concursos requieren JWT y pertenencia a la organización.
+
+- Header: `Authorization: Bearer <accessToken>`
+- `POST /api/organizations/:organizationId/contests` — Crear concurso (solo roles `OWNER` o `ADMIN` de la organización). Valida que `endsAt` sea posterior a `startsAt`.
+
+Request:
+
+```json
+{
+  "name": "Batalla de Bandas",
+  "description": "Concurso de bandas emergentes",
+  "startsAt": "2026-09-01T00:00:00.000Z",
+  "endsAt": "2026-09-03T00:00:00.000Z",
+  "votingMode": "JURY"
+}
+```
+
+- `GET /api/organizations/:organizationId/contests` — Obtener los concursos de una organización.
+- `GET /api/contests/:id` — Obtener concurso por ID.
+
 ---
 
 ## Flujo actual (resumen)
@@ -332,7 +387,7 @@ docker compose exec api npm run test:cov
 
 ### Cobertura actual
 
-Cobertura del 100% de statements en controllers, services, repositories, DTOs y utilidades de los módulos `auth`, `users`, `organizations`, `common/utils`, `prisma` y `health`. Los archivos `*.module.ts`, `app.module.ts` y `main.ts` (wiring de NestJS) quedan intencionadamente sin tests unitarios.
+Cobertura del 100% de statements en controllers, services, repositories, DTOs y utilidades de los módulos `auth`, `users`, `organizations`, `contests`, `common/utils`, `prisma` y `health`. Los archivos `*.module.ts`, `app.module.ts` y `main.ts` (wiring de NestJS) quedan intencionadamente sin tests unitarios.
 
 ### Convenciones
 
@@ -373,5 +428,6 @@ docker compose exec api npm run test:e2e
 - `test/app.e2e-spec.ts` — health: `GET /api/health`.
 - `test/users.e2e-spec.ts` — usuarios: `POST /api/users` y `GET /api/users/:id`.
 - `test/auth.e2e-spec.ts` — autenticación: `POST /api/auth/login` y `GET /api/auth/me`.
+- `test/contests.e2e-spec.ts` — concursos: CRUD de concursos por organización y permisos por rol.
 
 
