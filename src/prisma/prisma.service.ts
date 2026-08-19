@@ -10,9 +10,12 @@ export class PrismaService
   constructor() {
     const connectionString = process.env.DATABASE_URL!;
 
-    const schema = process.env.PRISMA_SCHEMA || new URL(connectionString).searchParams.get('schema') || 'public';
+    const schema =
+      process.env.PRISMA_SCHEMA ||
+      new URL(connectionString).searchParams.get('schema') ||
+      'public';
 
-    const adapter = new PrismaPg({connectionString},{schema});
+    const adapter = new PrismaPg({ connectionString }, { schema });
 
     super({
       adapter,
