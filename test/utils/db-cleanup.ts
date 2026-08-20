@@ -1,9 +1,16 @@
 import { Client } from 'pg';
 
+const DATABASE_URL = process.env.DATABASE_URL?.replace(/\?.*$/, '');
+
+if (!DATABASE_URL) {
+  throw new Error(
+    'DATABASE_URL no está definido. Ejecuta los tests E2E dentro del contenedor api: docker compose exec api npm run test:e2e',
+  );
+}
+
 export async function cleanDatabase() {
   const client = new Client({
-    connectionString:
-      'postgresql://band_contests:band_contests_dev@postgres:5432/band_contests',
+    connectionString: DATABASE_URL,
   });
 
   await client.connect();

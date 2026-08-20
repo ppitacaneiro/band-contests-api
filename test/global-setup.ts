@@ -1,10 +1,21 @@
 import { execSync } from 'child_process';
 import { Client } from 'pg';
 
-const DATABASE_URL =
-  'postgresql://band_contests:band_contests_dev@postgres:5432/band_contests';
+function getBaseDatabaseUrl(): string {
+  const raw = process.env.DATABASE_URL;
+
+  if (!raw) {
+    throw new Error(
+      'DATABASE_URL no está definido. Ejecuta los tests E2E dentro del contenedor api: docker compose exec api npm run test:e2e',
+    );
+  }
+
+  return raw.replace(/\?.*$/, '');
+}
 
 export default async function globalSetup() {
+  const DATABASE_URL = getBaseDatabaseUrl();
+
   console.log('\n[E2E] Preparing test database...');
 
   const client = new Client({

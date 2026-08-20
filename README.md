@@ -165,7 +165,11 @@ Pasos para levantar el proyecto completo cuando se clona el repositorio por prim
    cp .env.example .env
    ```
 
-   `docker-compose.yml` ya define `DATABASE_URL` para el contenedor `api`, por lo que el `.env` se usa para el resto de variables (p. ej. `JWT_SECRET`, `JWT_EXPIRES_IN`).
+   El `docker-compose.yml` **exige** que `POSTGRES_DB`, `POSTGRES_USER` y `POSTGRES_PASSWORD` estén definidas (no hay valores por defecto): sin un `.env` correcto, `docker compose up -d` falla indicando qué variable falta. `DATABASE_URL` se construye con los mismos valores para no desincronizarse. Para producción, genera secretos fuertes:
+
+   ```bash
+   openssl rand -hex 32   # para POSTGRES_PASSWORD y JWT_SECRET
+   ```
 
 3. **Levantar los servicios**
 
@@ -206,21 +210,24 @@ Pasos para levantar el proyecto completo cuando se clona el repositorio por prim
 Ejemplo de servicios relevantes en `docker-compose.yml`:
 
 - API (`api`): `3001:3001`
-- PostgreSQL (`postgres`): `postgres:17-alpine`, `5432:5432`
+- PostgreSQL (`postgres`): `postgres:17-alpine`, `127.0.0.1:5432:5432` (solo accesible desde el host)
 
-Credenciales de desarrollo (ejemplo):
+Credenciales de PostgreSQL (definidas en `.env`, nunca hardcodeadas):
 
-- Database: `band_contests`
-- User: `band_contests`
-- Password: `band_contests_dev`
-- Host: `postgres`
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — obligatorias en `.env`
+- Host: `postgres` (dentro de la red de Docker)
 - Port: `5432`
 
-Cadena de conexión de ejemplo:
+`DATABASE_URL` se construye en `docker-compose.yml` a partir de `POSTGRES_*`.
 
-```
-DATABASE_URL=postgresql://band_contests:band_contests_dev@postgres:5432/band_contests?schema=public
-```
+> **Importante**: `POSTGRES_PASSWORD` solo se aplica en el primer arranque del volumen (`postgres_data`). Si cambias la password, debes recrear el volumen:
+>
+> ```bash
+> docker compose down -v
+> docker compose up -d
+> ```
+>
+> `down -v` borra los datos de la base de datos.
 
 ---
 
