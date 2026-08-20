@@ -148,6 +148,59 @@ La API estará disponible en: `http://localhost:3001`
 
 ---
 
+## Puesta en marcha desde cero (clonado)
+
+Pasos para levantar el proyecto completo cuando se clona el repositorio por primera vez.
+
+1. **Clonar el repositorio**
+
+   ```bash
+   git clone <url-del-repositorio>
+   cd band-contests-api
+   ```
+
+2. **Configurar variables de entorno**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   `docker-compose.yml` ya define `DATABASE_URL` para el contenedor `api`, por lo que el `.env` se usa para el resto de variables (p. ej. `JWT_SECRET`, `JWT_EXPIRES_IN`).
+
+3. **Levantar los servicios**
+
+   ```bash
+   docker compose up -d
+   ```
+
+   Levanta PostgreSQL y la API. El contenedor `api` espera a que `postgres` esté healthy antes de arrancar.
+
+4. **Generar el Prisma Client (obligatorio)**
+
+   ```bash
+   docker compose exec api npx prisma generate
+   ```
+
+   Es obligatorio porque la carpeta `generated/` está en `.gitignore` y no se clona, pero el código la importa en `src/prisma/prisma.service.ts`. Sin este paso la aplicación no compila.
+
+5. **Aplicar las migraciones (obligatorio)**
+
+   ```bash
+   docker compose exec api npx prisma migrate deploy
+   ```
+
+   Aplica las migraciones existentes en `prisma/migrations/`. Las migraciones **no** se ejecutan automáticamente al arrancar: el `Dockerfile` solo lanza `npm run start:dev`.
+
+6. **Verificar la instalación**
+
+   ```bash
+   docker compose exec api npx prisma migrate status
+   ```
+
+   Todas las migraciones deben aparecer como aplicadas. La API estará disponible en `http://localhost:3001`.
+
+---
+
 ## Servicios Docker (resumen)
 
 Ejemplo de servicios relevantes en `docker-compose.yml`:
@@ -178,12 +231,28 @@ Comandos útiles (ejecutar dentro del contenedor `api`):
 ```bash
 docker compose exec api npx prisma generate
 docker compose exec api npx prisma migrate status
-docker compose exec api npx prisma migrate dev --name <nombre_migracion>
 docker compose exec api npx prisma migrate deploy
+docker compose exec api npx prisma migrate dev --name <nombre_migracion>
 docker compose exec api npx prisma migrate reset
 ```
 
-`migrate reset` elimina todos los datos: no usar en producción.
+### Diferencia entre comandos de migración
+
+| Comando | Cuándo usarlo | Efecto |
+| --- | --- | --- |
+| `npx prisma migrate deploy` | Clonado, CI y producción | Aplica las migraciones ya creadas en `prisma/migrations/`. No crea migraciones nuevas. |
+| `npx prisma migrate dev --name <nombre>` | Desarrollo | Crea una nueva migración a partir de los cambios en `schema.prisma` y la aplica. |
+| `npx prisma migrate reset` | Solo desarrollo | Borra todos los datos y reaplica todas las migraciones. **Nunca usar en producción.** |
+| `npx prisma generate` | Tras clonar o tras cambios en `schema.prisma` | Regenera el Prisma Client en `generated/`. |
+
+### Nota
+
+Las migraciones no se aplican automáticamente al arrancar la API: es necesario ejecutar `npx prisma migrate deploy` manualmente tras levantar los contenedores.
+
+### Troubleshooting
+
+- Si el contenedor `api` cae al arrancar: revisar los logs con `docker compose logs api` y comprobar el estado de las migraciones con `docker compose exec api npx prisma migrate status`.
+- Si hay errores de conexión a la base de datos: confirmar que `postgres` está healthy con `docker compose ps`.
 
 ---
 
