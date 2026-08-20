@@ -1,9 +1,15 @@
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let usersService: { create: jest.Mock; findById: jest.Mock };
+  const user: AuthenticatedUser = {
+    id: 'user-1',
+    email: 'jane@example.com',
+    role: 'BAND',
+  };
 
   beforeEach(() => {
     usersService = { create: jest.fn(), findById: jest.fn() };
@@ -32,7 +38,7 @@ describe('UsersController', () => {
   });
 
   describe('findById', () => {
-    it('delegates to UsersService.findById and returns its result', async () => {
+    it('delegates to UsersService.findById with the id and current user', async () => {
       const expected = {
         id: 'user-1',
         name: 'Jane Doe',
@@ -40,9 +46,9 @@ describe('UsersController', () => {
       };
       usersService.findById.mockResolvedValue(expected);
 
-      const result = await controller.findById('user-1');
+      const result = await controller.findById('user-1', user);
 
-      expect(usersService.findById).toHaveBeenCalledWith('user-1');
+      expect(usersService.findById).toHaveBeenCalledWith('user-1', user);
       expect(result).toBe(expected);
     });
   });

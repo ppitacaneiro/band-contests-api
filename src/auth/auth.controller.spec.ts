@@ -36,7 +36,7 @@ describe('AuthController', () => {
         role: 'BAND',
       };
 
-      const result = controller.getMe({ user }) as AuthenticatedUser;
+      const result = controller.getMe({ user });
 
       expect(result).toBe(user);
     });

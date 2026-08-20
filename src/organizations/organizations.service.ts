@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { OrganizationsRepository } from './organizations.repository';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { slugify } from '../common/utils/slug.util';
@@ -31,7 +35,22 @@ export class OrganizationsService {
     return this.organizationsRepository.findByUserId(userId);
   }
 
-  async findById(id: string) {
-    return this.organizationsRepository.findById(id);
+  async findById(id: string, userId: string) {
+    const organization = await this.organizationsRepository.findById(id);
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    const membership = await this.organizationsRepository.findMembership(
+      userId,
+      id,
+    );
+
+    if (!membership) {
+      throw new ForbiddenException('You are not a member of this organization');
+    }
+
+    return organization;
   }
 }

@@ -1,3 +1,4 @@
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrganizationsService } from './organizations.service';
 import { OrganizationsRepository } from './organizations.repository';
 
@@ -8,6 +9,7 @@ describe('OrganizationsService', () => {
     create: jest.Mock;
     findByUserId: jest.Mock;
     findById: jest.Mock;
+    findMembership: jest.Mock;
   };
 
   beforeEach(() => {
@@ -16,6 +18,7 @@ describe('OrganizationsService', () => {
       create: jest.fn(),
       findByUserId: jest.fn(),
       findById: jest.fn(),
+      findMembership: jest.fn(),
     };
     service = new OrganizationsService(
       organizationsRepository as unknown as OrganizationsRepository,
@@ -99,14 +102,44 @@ describe('OrganizationsService', () => {
   });
 
   describe('findById', () => {
-    it('delegates to the repository', async () => {
-      const org = { id: 'org-1' };
+    it('returns the organization when the user is a member', async () => {
+      const org = { id: 'org-1', name: 'Rock Coruña' };
       organizationsRepository.findById.mockResolvedValue(org);
+      organizationsRepository.findMembership.mockResolvedValue({
+        id: 'membership-1',
+        userId: 'user-1',
+        organizationId: 'org-1',
+        role: 'OWNER',
+      });
 
-      const result = await service.findById('org-1');
+      const result = await service.findById('org-1', 'user-1');
 
       expect(organizationsRepository.findById).toHaveBeenCalledWith('org-1');
+      expect(organizationsRepository.findMembership).toHaveBeenCalledWith(
+        'user-1',
+        'org-1',
+      );
       expect(result).toBe(org);
+    });
+
+    it('throws ForbiddenException when the user is not a member', async () => {
+      organizationsRepository.findById.mockResolvedValue({
+        id: 'org-1',
+        name: 'Rock Coruña',
+      });
+      organizationsRepository.findMembership.mockResolvedValue(null);
+
+      await expect(service.findById('org-1', 'user-2')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('throws NotFoundException when the organization does not exist', async () => {
+      organizationsRepository.findById.mockResolvedValue(null);
+
+      await expect(service.findById('missing-org', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

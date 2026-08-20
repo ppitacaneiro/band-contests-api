@@ -56,13 +56,16 @@ describe('OrganizationsController', () => {
   });
 
   describe('findById', () => {
-    it('delegates to OrganizationsService.findById with the given id', async () => {
+    it('delegates to OrganizationsService.findById with the given id and current user id', async () => {
       const expected = { id: 'org-1' };
       organizationsService.findById.mockResolvedValue(expected);
 
-      const result = await controller.findById('org-1');
+      const result = await controller.findById('org-1', user);
 
-      expect(organizationsService.findById).toHaveBeenCalledWith('org-1');
+      expect(organizationsService.findById).toHaveBeenCalledWith(
+        'org-1',
+        'user-1',
+      );
       expect(result).toBe(expected);
     });
   });

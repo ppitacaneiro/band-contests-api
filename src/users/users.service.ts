@@ -1,11 +1,13 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersRepository } from './users.repository';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 @Injectable()
 export class UsersService {
@@ -37,11 +39,15 @@ export class UsersService {
     };
   }
 
-  async findById(id: string) {
+  async findById(id: string, actor: AuthenticatedUser) {
     const user = await this.usersRepository.findById(id);
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    if (actor.id !== id && actor.role !== 'ADMIN') {
+      throw new ForbiddenException('You are not allowed to view this user');
     }
 
     return {

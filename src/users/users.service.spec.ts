@@ -1,7 +1,12 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
+import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
 jest.mock('bcrypt');
 
@@ -75,18 +80,26 @@ describe('UsersService', () => {
   });
 
   describe('findById', () => {
-    it('returns a sanitized user when found', async () => {
-      usersRepository.findById.mockResolvedValue({
-        id: 'user-1',
-        name: 'Jane Doe',
-        email: 'jane@example.com',
-        password: 'hashed-password',
-        emailVerifiedAt: null,
-        createdAt: new Date('2026-01-01'),
-        updatedAt: new Date('2026-01-02'),
-      });
+    const storedUser = {
+      id: 'user-1',
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+      password: 'hashed-password',
+      emailVerifiedAt: null,
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-02'),
+    };
 
-      const result = await service.findById('user-1');
+    const actor: AuthenticatedUser = {
+      id: 'user-1',
+      email: 'jane@example.com',
+      role: 'BAND',
+    };
+
+    it('returns a sanitized user when the actor is the same user', async () => {
+      usersRepository.findById.mockResolvedValue(storedUser);
+
+      const result = await service.findById('user-1', actor);
 
       expect(result).toEqual({
         id: 'user-1',
@@ -99,10 +112,34 @@ describe('UsersService', () => {
       expect(result).not.toHaveProperty('password');
     });
 
+    it('returns a sanitized user when the actor is an ADMIN', async () => {
+      usersRepository.findById.mockResolvedValue(storedUser);
+
+      const result = await service.findById('user-1', {
+        ...actor,
+        id: 'admin-1',
+        role: 'ADMIN',
+      });
+
+      expect(result).toMatchObject({ id: 'user-1', email: 'jane@example.com' });
+    });
+
+    it('throws ForbiddenException when the actor is not the user nor an ADMIN', async () => {
+      usersRepository.findById.mockResolvedValue(storedUser);
+
+      await expect(
+        service.findById('user-1', {
+          id: 'user-2',
+          email: 'other@example.com',
+          role: 'BAND',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it('throws NotFoundException when the user does not exist', async () => {
       usersRepository.findById.mockResolvedValue(null);
 
-      await expect(service.findById('missing-user')).rejects.toThrow(
+      await expect(service.findById('missing-user', actor)).rejects.toThrow(
         NotFoundException,
       );
     });

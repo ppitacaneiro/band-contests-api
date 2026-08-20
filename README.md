@@ -407,7 +407,7 @@ Base URL: `/api`
 
 ### Auth
 
-- `POST /api/auth/login` — Inicia sesión.
+- `POST /api/auth/login` — Inicia sesión. Sujeto a rate limiting: por defecto 5 intentos/minuto por IP (`THROTTLE_LOGIN_LIMIT`).
 
 Request:
 
@@ -419,6 +419,11 @@ Request:
 ```
 
 Response: token JWT (ver arriba).
+
+### Users
+
+- `POST /api/users` — Registra un nuevo usuario.
+- `GET /api/users/:id` — Obtiene un usuario por ID (requiere JWT; solo el propio usuario o un `ADMIN`).
 
 ### Organizations
 
@@ -436,7 +441,7 @@ Request:
 ```
 
 - `GET /api/organizations` — Obtener organizaciones del usuario autenticado.
-- `GET /api/organizations/:id` — Obtener organización por ID (la autorización por pertenencia necesita refuerzo).
+- `GET /api/organizations/:id` — Obtener organización por ID (requiere ser miembro de la organización).
 
 ### Contests
 
@@ -577,8 +582,10 @@ docker compose exec api npm run test:e2e
 #### Cobertura actual
 
 - `test/app.e2e-spec.ts` — health: `GET /api/health`.
-- `test/users.e2e-spec.ts` — usuarios: `POST /api/users` y `GET /api/users/:id`.
+- `test/users.e2e-spec.ts` — usuarios: `POST /api/users` y `GET /api/users/:id` (requiere JWT, solo propio perfil o ADMIN).
+- `test/organizations.e2e-spec.ts` — organizaciones: `GET /api/organizations/:id` (requiere pertenencia).
 - `test/auth.e2e-spec.ts` — autenticación: `POST /api/auth/login` y `GET /api/auth/me`.
+- `test/rate-limit.e2e-spec.ts` — rate limiting: `POST /api/auth/login` devuelve `429` al superar el límite.
 - `test/contests.e2e-spec.ts` — concursos: CRUD de concursos por organización y permisos por rol.
 - `test/bands.e2e-spec.ts` — bandas: CRUD de bandas, gestión de miembros y permisos por rol.
 

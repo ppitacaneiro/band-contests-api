@@ -46,12 +46,22 @@ export class OrganizationsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obtiene una organización por su id' })
+  @ApiOperation({
+    summary:
+      'Obtiene una organización por su id (solo miembros de la organización)',
+  })
   @ApiParam({ name: 'id', description: 'Id de la organización' })
   @ApiResponse({ status: 200, description: 'Datos de la organización' })
   @ApiResponse({ status: 401, description: 'Token ausente o inválido' })
+  @ApiResponse({
+    status: 403,
+    description: 'No eres miembro de la organización',
+  })
   @ApiResponse({ status: 404, description: 'Organización no encontrada' })
-  async findById(@Param('id') id: string) {
-    return this.organizationsService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.organizationsService.findById(id, user.id);
   }
 }
